@@ -15,7 +15,9 @@ import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.media.AudioAttributes;
 import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.VibrationEffect;
@@ -397,6 +399,8 @@ class AlarmUtil {
 
             PendingIntent pendingIntent = PendingIntent.getActivity(mContext, notificationID, intent, PendingIntent.FLAG_UPDATE_CURRENT);
 
+            // https://stackoverflow.com/a/63336115/3670829
+            Uri soundUri = Uri.parse("android.resource://" + mContext.getPackageName() + "/" + R.raw.silence);
             NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(mContext, channelID)
                     .setSmallIcon(smallIconResId)
                     .setContentTitle(title)
@@ -406,7 +410,7 @@ class AlarmUtil {
                     .setAutoCancel(alarm.isAutoCancel())
                     .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                     .setCategory(NotificationCompat.CATEGORY_ALARM)
-                    .setSound(null)
+                    .setSound(soundUri)
                     .setDeleteIntent(createOnDismissedIntent(mContext, alarm.getId()));
 
             long vibration = (long) alarm.getVibration();
@@ -415,6 +419,11 @@ class AlarmUtil {
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 NotificationChannel mChannel = new NotificationChannel(channelID, "Alarm Notify", NotificationManager.IMPORTANCE_HIGH);
+                AudioAttributes audioAttributes = new AudioAttributes.Builder()
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                    .build();
+                mChannel.setSound(soundUri, audioAttributes);
                 mChannel.enableLights(true);
 
                 String color = alarm.getColor();

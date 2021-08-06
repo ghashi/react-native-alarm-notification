@@ -37,6 +37,10 @@ public class AlarmReceiver extends BroadcastReceiver {
                         alarmUtil.setBootReceiver();
 
                         Log.d(TAG, "alarm start: " + alarm.toString() + ", alarms left: " + alarms.size());
+                        ReactApplicationContext reactContext = ANModule.getReactAppContext();
+                        if (reactContext != null) {
+                            reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit("OnNotificationStarted", alarm.toString());
+                        }
                     } catch (Exception e) {
                         alarmUtil.stopAlarmSound();
                         e.printStackTrace();

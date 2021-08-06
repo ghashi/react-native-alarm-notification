@@ -11,6 +11,7 @@
 
 static NSString *const kLocalNotificationReceived = @"LocalNotificationReceived";
 static NSString *const kLocalNotificationDismissed = @"LocalNotificationDismissed";
+static NSString *const kLocalNotificationStarted = @"LocalNotificationStarted";
 
 static AVAudioPlayer *player;
 static id _sharedInstance = nil;
@@ -150,6 +151,10 @@ RCT_EXPORT_MODULE(RNAlarmNotification);
     if([scheduleType isEqualToString:@"repeat"]){
         [RnAlarmNotification repeatAlarm:notification];
     }
+
+    [[NSNotificationCenter defaultCenter] postNotificationName:kLocalNotificationStarted
+                                                    object:self
+                                                    userInfo:RCTFormatUNNotification(notification)];
 }
 
 + (void)didReceiveNotificationResponse:(UNNotificationResponse *)response
@@ -188,10 +193,15 @@ API_AVAILABLE(ios(10.0)) {
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(handleLocalNotificationDismissed:) name:kLocalNotificationDismissed
                                                object:nil];
+
+    // start notification
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(handleLocalNotificationStarted:) name:kLocalNotificationStarted
+                                               object:nil];
 }
 
 - (NSArray<NSString *> *)supportedEvents {
-    return @[@"OnNotificationOpened", @"OnNotificationDismissed"];
+    return @[@"OnNotificationOpened", @"OnNotificationStarted", @"OnNotificationDismissed"];
 }
 
 - (void)handleLocalNotificationReceived:(NSNotification *)notification {
@@ -202,6 +212,11 @@ API_AVAILABLE(ios(10.0)) {
 - (void)handleLocalNotificationDismissed:(NSNotification *)notification {
     // send to js
     [self sendEventWithName:@"OnNotificationDismissed" body: stringify(notification.userInfo)];
+}
+
+- (void)handleLocalNotificationStarted:(NSNotification *)notification {
+    // send to js
+    [self sendEventWithName:@"OnNotificationStarted" body: stringify(notification.userInfo)];
 }
 
 - (void)stopObserving {

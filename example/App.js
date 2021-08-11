@@ -9,6 +9,7 @@ import {
 	Platform,
 	NativeEventEmitter,
 	NativeModules,
+	ScrollView,
 } from 'react-native';
 import ReactNativeAN from 'react-native-alarm-notification';
 
@@ -43,11 +44,12 @@ const repeatAlarmNotifData = {
 class App extends Component {
 	_subscribeOpen;
 	_subscribeDismiss;
+	_subscribeStart;
 
 	state = {
 		fireDate: ReactNativeAN.parseDate(new Date(Date.now())),
 		update: [],
-		futureFireDate: '1',
+		futureFireDate: '0.1',
 		alarmId: null,
 	};
 
@@ -98,7 +100,7 @@ class App extends Component {
 	setFutureAlarm = async () => {
 		const {futureFireDate, update} = this.state;
 
-		const _seconds = parseInt(futureFireDate, 10) * 60 * 1000;
+		const _seconds = Math.round(parseFloat(futureFireDate, 10) * 60 * 1000);
 		const fire_date = ReactNativeAN.parseDate(new Date(Date.now() + _seconds));
 
 		const details = {
@@ -154,6 +156,15 @@ class App extends Component {
 			},
 		);
 
+		this._subscribeStart = RNEmitter.addListener(
+			'OnNotificationStarted',
+			(data) => {
+				console.log(data);
+				const obj = JSON.parse(data);
+				console.log(`notification started: ${obj.id}`);
+			},
+		);
+
 		// check ios permissions
 		if (Platform.OS === 'ios') {
 			this.showPermissions();
@@ -176,6 +187,7 @@ class App extends Component {
 	componentWillUnmount() {
 		this._subscribeDismiss.remove();
 		this._subscribeOpen.remove();
+		this._subscribeStart.remove();
 	}
 
 	showPermissions = () => {
@@ -214,81 +226,89 @@ class App extends Component {
 	render() {
 		const {update, fireDate, futureFireDate, alarmId} = this.state;
 		return (
-			<View style={styles.wrapper}>
-				<View>
+			<ScrollView>
+				<View style={styles.wrapper}>
 					<View>
-						<Text>Alarm Date in the future (example 01-01-2022 00:00:00)</Text>
 						<View>
-							<TextInput
-								style={styles.date}
-								onChangeText={(text) => this.setState({fireDate: text})}
-								value={fireDate}
+							<Text>
+								Alarm Date in the future (example 01-01-2022 00:00:00)
+							</Text>
+							<View>
+								<TextInput
+									style={styles.date}
+									onChangeText={(text) => this.setState({fireDate: text})}
+									value={fireDate}
+								/>
+							</View>
+						</View>
+						<View>
+							<Button
+								onPress={this.setAlarm}
+								title="Set Alarm"
+								color="#007fff"
 							/>
 						</View>
 					</View>
-					<View>
-						<Button onPress={this.setAlarm} title="Set Alarm" color="#007fff" />
+					<View style={styles.margin}>
+						<Text>Alarm Time From Now (in minutes):</Text>
+						<TextInput
+							style={styles.date}
+							onChangeText={(text) => this.setState({futureFireDate: text})}
+							value={futureFireDate}
+						/>
 					</View>
+					<View style={styles.margin}>
+						<Button
+							onPress={this.setFutureAlarm}
+							title="Set Future Alarm"
+							color="#007fff"
+						/>
+					</View>
+					<View style={styles.margin}>
+						<Button
+							onPress={this.setFutureRpeatAlarm}
+							title="Set Future Alarm with Repeat"
+							color="#007fff"
+						/>
+					</View>
+					<View style={styles.margin}>
+						<Button
+							onPress={this.sendNotification}
+							title="Send Notification Now"
+							color="#007fff"
+						/>
+					</View>
+					<View style={styles.margin}>
+						<Button
+							onPress={this.stopAlarmSound}
+							title="Stop Alarm Sound"
+							color="#841584"
+						/>
+					</View>
+					<View>
+						<TextInput
+							style={styles.date}
+							onChangeText={(text) => this.setState({alarmId: text})}
+							value={alarmId}
+						/>
+					</View>
+					<View style={styles.margin}>
+						<Button
+							onPress={this.deleteAlarm}
+							title="Delete Alarm"
+							color="#841584"
+						/>
+					</View>
+					<View style={styles.margin}>
+						<Button
+							onPress={this.viewAlarms}
+							title="See all active alarms"
+							color="#841584"
+						/>
+					</View>
+					<Text>{JSON.stringify(update, null, 2)}</Text>
 				</View>
-				<View style={styles.margin}>
-					<Text>Alarm Time From Now (in minutes):</Text>
-					<TextInput
-						style={styles.date}
-						onChangeText={(text) => this.setState({futureFireDate: text})}
-						value={futureFireDate}
-					/>
-				</View>
-				<View style={styles.margin}>
-					<Button
-						onPress={this.setFutureAlarm}
-						title="Set Future Alarm"
-						color="#007fff"
-					/>
-				</View>
-				<View style={styles.margin}>
-					<Button
-						onPress={this.setFutureRpeatAlarm}
-						title="Set Future Alarm with Repeat"
-						color="#007fff"
-					/>
-				</View>
-				<View style={styles.margin}>
-					<Button
-						onPress={this.sendNotification}
-						title="Send Notification Now"
-						color="#007fff"
-					/>
-				</View>
-				<View style={styles.margin}>
-					<Button
-						onPress={this.stopAlarmSound}
-						title="Stop Alarm Sound"
-						color="#841584"
-					/>
-				</View>
-				<View>
-					<TextInput
-						style={styles.date}
-						onChangeText={(text) => this.setState({alarmId: text})}
-						value={alarmId}
-					/>
-				</View>
-				<View style={styles.margin}>
-					<Button
-						onPress={this.deleteAlarm}
-						title="Delete Alarm"
-						color="#841584"
-					/>
-				</View>
-				<View style={styles.margin}>
-					<Button
-						onPress={this.viewAlarms}
-						title="See all active alarms"
-						color="#841584"
-					/>
-				</View>
-				<Text>{JSON.stringify(update, null, 2)}</Text>
-			</View>
+			</ScrollView>
 		);
 	}
 }

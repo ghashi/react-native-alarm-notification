@@ -47,6 +47,7 @@ class AlarmUtil {
 
     private Context mContext;
     private AudioInterface audioInterface;
+    static private boolean alarmPlaying = false;
     static final long[] DEFAULT_VIBRATE_PATTERN = {0, 250, 250, 250};
 
     AlarmUtil(Application context) {
@@ -54,6 +55,10 @@ class AlarmUtil {
 
         audioInterface = AudioInterface.getInstance();
         audioInterface.init(mContext);
+    }
+
+    boolean isAlarmPlaying() {
+        return alarmPlaying;
     }
 
     private Class getMainActivityClass() {
@@ -82,6 +87,8 @@ class AlarmUtil {
     }
 
     private void playAlarmSound(String name, String names, boolean shouldLoop, double volume) {
+        alarmPlaying = true;
+
         float number = (float) volume;
 
         MediaPlayer mediaPlayer = audioInterface.getSingletonMedia(name, names);
@@ -93,6 +100,7 @@ class AlarmUtil {
             @Override
             public void onCompletion(MediaPlayer mp) {
                 try {
+                    alarmPlaying = false;
                     mp.stop();
                     mp.reset();
                     mp.release();
@@ -271,6 +279,7 @@ class AlarmUtil {
     }
 
     void stopAlarm(AlarmModel alarm) {
+        alarmPlaying = false;
         AlarmManager alarmManager = this.getAlarmManager();
 
         int alarmId = alarm.getAlarmId();

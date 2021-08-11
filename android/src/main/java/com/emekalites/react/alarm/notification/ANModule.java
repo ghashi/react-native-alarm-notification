@@ -2,6 +2,7 @@ package com.emekalites.react.alarm.notification;
 
 import android.app.Application;
 import android.os.Bundle;
+import android.util.Log;
 
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.Promise;
@@ -188,6 +189,11 @@ public class ANModule extends ReactContextBaseJavaModule {
     @ReactMethod
     public void removeFiredNotification(int id) {
         alarmUtil.removeFiredNotification(id);
+    }
+
+    @ReactMethod
+    public void isAlarmPlaying(Promise promise) {
+        promise.resolve(alarmUtil.isAlarmPlaying());
     }
 
     @ReactMethod

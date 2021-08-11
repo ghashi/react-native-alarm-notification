@@ -6,8 +6,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
 
+import com.emekalites.react.alarm.notification.BundleJSONConverter;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
+import com.google.gson.Gson;
+
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 
@@ -40,7 +44,9 @@ public class AlarmReceiver extends BroadcastReceiver {
                         Log.d(TAG, "alarm start: " + alarm.toString() + ", alarms left: " + alarms.size());
                         ReactApplicationContext reactContext = ANModule.getReactAppContext();
                         if (reactContext != null) {
-                            reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit("OnNotificationStarted", alarm.toString());
+                            Gson gson = new Gson();
+                            String jsonString = gson.toJson(alarm);
+                            reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit("OnNotificationStarted", jsonString);
                         }
                     } catch (Exception e) {
                         alarmUtil.stopAlarmSound();
@@ -79,7 +85,10 @@ public class AlarmReceiver extends BroadcastReceiver {
                             Log.e(TAG, "alarm cancelled: " + alarm.toString());
 
                             // emit notification dismissed
-                            ANModule.getReactAppContext().getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit("OnNotificationDismissed", "{\"id\": \"" + alarm.getId() + "\"}");
+                            ReactApplicationContext reactContext = ANModule.getReactAppContext();
+                            if (reactContext != null) {
+                                reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit("OnNotificationDismissed", "{\"id\": \"" + alarm.getId() + "\"}");
+                            }
 
                             alarmUtil.removeFiredNotification(alarm.getId());
                             

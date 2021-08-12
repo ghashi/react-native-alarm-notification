@@ -15,7 +15,7 @@ Pod::Spec.new do |s|
   s.platforms    = { :ios => "9.0" }
   s.source       = { :git => "https://github.com/emekalites/react-native-alarm-notification.git", :tag => "#{s.version}" }
 
-  s.source_files = "ios/**/*.{h,c,m,swift}"
+  s.source_files = "ios/**/*.{h,c,m,swift,mp3}"
   s.requires_arc = true
 
   s.dependency "React"

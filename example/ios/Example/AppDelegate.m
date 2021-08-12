@@ -57,7 +57,7 @@ static void InitializeFlipper(UIApplication *application) {
 - (void)userNotificationCenter:(UNUserNotificationCenter *)center
        willPresentNotification:(UNNotification *)notification withCompletionHandler: (void (^)(UNNotificationPresentationOptions options))completionHandler {
   NSLog(@"handle push notification: %@", notification.request.content.userInfo);
-  [RnAlarmNotification didReceiveNotification:notification];
+  [[RnAlarmNotification sharedInstance] didReceiveNotification:notification];
   completionHandler(UNNotificationPresentationOptionBadge | UNNotificationPresentationOptionSound | UNNotificationPresentationOptionAlert);
 }
 
@@ -65,7 +65,7 @@ static void InitializeFlipper(UIApplication *application) {
 didReceiveNotificationResponse:(UNNotificationResponse *)response
          withCompletionHandler:(void (^)(void))completionHandler  API_AVAILABLE(ios(10.0)){
     NSLog(@"handle push notification in foreground");
-    [RnAlarmNotification didReceiveNotificationResponse:response];
+    [[RnAlarmNotification sharedInstance]  didReceiveNotificationResponse:response];
     completionHandler();
 }
 

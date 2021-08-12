@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		8D0B4EFD24DC22BA00A18E45 /* RnAlarmNotification.m in Sources */ = {isa = PBXBuildFile; fileRef = 8D0B4EFB24DC22B900A18E45 /* RnAlarmNotification.m */; };
+		8FD8E51D26C4D71100C309D2 /* AlarmConfig.m in Sources */ = {isa = PBXBuildFile; fileRef = 8FD8E51B26C4D71100C309D2 /* AlarmConfig.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -26,6 +27,8 @@
 		134814201AA4EA6300B7C361 /* libRnAlarmNotification.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libRnAlarmNotification.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		8D0B4EFB24DC22B900A18E45 /* RnAlarmNotification.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RnAlarmNotification.m; sourceTree = "<group>"; };
 		8D0B4EFC24DC22B900A18E45 /* RnAlarmNotification.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RnAlarmNotification.h; sourceTree = "<group>"; };
+		8FD8E51B26C4D71100C309D2 /* AlarmConfig.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = AlarmConfig.m; path = "/Users/ghashi/Projects/react-native-alarm-notification/ios/AlarmConfig.m"; sourceTree = "<absolute>"; };
+		8FD8E51C26C4D71100C309D2 /* AlarmConfig.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = AlarmConfig.h; path = "/Users/ghashi/Projects/react-native-alarm-notification/ios/AlarmConfig.h"; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -53,6 +56,8 @@
 				134814211AA4EA7D00B7C361 /* Products */,
 				8D0B4EFC24DC22B900A18E45 /* RnAlarmNotification.h */,
 				8D0B4EFB24DC22B900A18E45 /* RnAlarmNotification.m */,
+				8FD8E51C26C4D71100C309D2 /* AlarmConfig.h */,
+				8FD8E51B26C4D71100C309D2 /* AlarmConfig.m */,
 			);
 			sourceTree = "<group>";
 		};
@@ -114,6 +119,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8D0B4EFD24DC22BA00A18E45 /* RnAlarmNotification.m in Sources */,
+				8FD8E51D26C4D71100C309D2 /* AlarmConfig.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

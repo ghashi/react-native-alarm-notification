@@ -1,4 +1,5 @@
 #import "RnAlarmNotification.h"
+#import "AlarmConfig.h"
 
 #import <UserNotifications/UserNotifications.h>
 
@@ -8,15 +9,19 @@
 #import <React/RCTUtils.h>
 #import <AudioToolbox/AudioToolbox.h>
 #import <AVFoundation/AVFoundation.h>
+#import <MediaPlayer/MediaPlayer.h>
 
 static NSString *const kLocalNotificationReceived = @"LocalNotificationReceived";
 static NSString *const kLocalNotificationDismissed = @"LocalNotificationDismissed";
 static NSString *const kLocalNotificationStarted = @"LocalNotificationStarted";
 
-static AVAudioPlayer *player;
 static id _sharedInstance = nil;
 
 @implementation RnAlarmNotification
+
+AVAudioPlayer *player;
+MPVolumeView *volumeView;
+UISlider *volumeSlider;
 
 +(instancetype)sharedInstance {
     static dispatch_once_t p;
@@ -26,6 +31,43 @@ static id _sharedInstance = nil;
     return _sharedInstance;
 }
 
+
+-(instancetype)init{
+    self = [super init];
+    [self initVolumeView];
+
+    return self;
+}
+
+#pragma mark - Volume config
+
+-(void)initVolumeView{
+    volumeView = [[MPVolumeView alloc] initWithFrame:CGRectMake(-[UIScreen mainScreen].bounds.size.width, 0, 0, 0)];
+    [self showVolumeUI:YES];
+    for (UIView* view in volumeView.subviews) {
+        if ([view.class.description isEqualToString:@"MPVolumeSlider"]){
+            volumeSlider = (UISlider*)view;
+            break;
+        }
+    }
+}
+
+-(void)showVolumeUI:(BOOL)flag{
+    if(flag && [volumeView superview]){
+        [volumeView removeFromSuperview];
+    }else if(!flag && ![volumeView superview]){
+        [[[[UIApplication sharedApplication] keyWindow] rootViewController].view addSubview:volumeView];
+    }
+}
+
+-(void)setVolume:(float)val showingUI:(BOOL)showUI {
+    [self showVolumeUI:showUI];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.05 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        volumeSlider.value = val;
+    });
+}
+
+#pragma mark - utils
 API_AVAILABLE(ios(10.0))
 static NSDictionary *RCTFormatUNNotification(UNNotification *notification) {
     NSMutableDictionary *formattedNotification = [NSMutableDictionary dictionary];
@@ -114,13 +156,42 @@ static NSString *stringify(NSDictionary *notification) {
     }
 }
 
+API_AVAILABLE(ios(10.0))
+static inline NSDictionary *RCTPromiseResolveValueForUNNotificationSettings(UNNotificationSettings* _Nonnull settings) {
+    return RCTSettingsDictForUNNotificationSettings(settings.alertSetting == UNNotificationSettingEnabled, settings.badgeSetting == UNNotificationSettingEnabled, settings.soundSetting == UNNotificationSettingEnabled, settings.lockScreenSetting == UNNotificationSettingEnabled, settings.notificationCenterSetting == UNNotificationSettingEnabled);
+}
+
+static inline NSDictionary *RCTSettingsDictForUNNotificationSettings(BOOL alert, BOOL badge, BOOL sound, BOOL lockScreen, BOOL notificationCenter) {
+    return @{@"alert": @(alert), @"badge": @(badge), @"sound": @(sound), @"lockScreen": @(lockScreen), @"notificationCenter": @(notificationCenter)};
+}
+
+API_AVAILABLE(ios(10.0))
+static NSDictionary *RCTFormatUNNotificationRequest(UNNotificationRequest *request)
+{
+    NSMutableDictionary *formattedNotification = [NSMutableDictionary dictionary];
+    UNNotificationContent *content = request.content;
+    
+    NSDateComponents *fireDate = parseDate(content.userInfo[@"fire_date"]);
+
+    formattedNotification[@"id"] = request.identifier;
+    formattedNotification[@"day"] = [NSString stringWithFormat:@"%li", (long)fireDate.day];
+    formattedNotification[@"month"] = [NSString stringWithFormat:@"%li", (long)fireDate.month];
+    formattedNotification[@"year"] = [NSString stringWithFormat:@"%li", (long)fireDate.year];
+    formattedNotification[@"hour"] = [NSString stringWithFormat:@"%li", (long)fireDate.hour];
+    formattedNotification[@"minute"] =[NSString stringWithFormat:@"%li", (long)fireDate.minute];
+    formattedNotification[@"second"] = [NSString stringWithFormat:@"%li", (long)fireDate.second];
+
+    return formattedNotification;
+}
+
 - (dispatch_queue_t)methodQueue {
     return dispatch_get_main_queue();
 }
 
 RCT_EXPORT_MODULE(RNAlarmNotification);
 
-+ (void)vibratePhone {
+#pragma mark - RNAlarmNotification
+- (void)vibratePhone {
     NSLog(@"vibratePhone %@", @"here");
     if([[UIDevice currentDevice].model isEqualToString:@"iPhone"]) {
         AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
@@ -129,44 +200,36 @@ RCT_EXPORT_MODULE(RNAlarmNotification);
     }
 }
 
-+ (void) didReceiveNotification:(UNNotification *)notification  API_AVAILABLE(ios(10.0)){
-    NSLog(@"content: %@", notification.request.content.userInfo);
-    NSLog(@"alarm id: %@", notification.request.identifier);
-    
-    NSNumber *vibrate = [notification.request.content.userInfo objectForKey:@"vibrate"];
-    NSLog(@"vibrate: %@", vibrate);
-    
-    NSNumber *sound = [notification.request.content.userInfo objectForKey:@"sound"];
-    
-    if([vibrate isEqualToNumber: [NSNumber numberWithInt: 1]]){
-        NSLog(@"do vibrate now");
-        [RnAlarmNotification vibratePhone];
-    }
-    
-    if([sound isEqualToNumber: [NSNumber numberWithInt: 1]]){
-        [RnAlarmNotification playSound:notification];
-    }
-    
-    NSString *scheduleType = [notification.request.content.userInfo objectForKey:@"schedule_type"];
-    if([scheduleType isEqualToString:@"repeat"]){
-        [RnAlarmNotification repeatAlarm:notification];
-    }
+- (void) didReceiveNotification:(UNNotification *)notification  API_AVAILABLE(ios(10.0)){
+//    AlarmConfig *alarmConfig = [[AlarmConfig alloc] initWitAlarmId:notification.request.identifier notification:notification];
+//    NSLog(@"content: %@", alarmConfig.dictionary);
+//
+//    NSNumber *vibrate = alarmConfig.vibrate;
+//    if([vibrate isEqualToNumber: [NSNumber numberWithInt: 1]]){
+//        NSLog(@"do vibrate now");
+//        [self vibratePhone];
+//    }
+//
+//    NSString *scheduleType = alarmConfig.scheduleType;
+//    if([scheduleType isEqualToString:@"repeat"]){
+//        [self repeatAlarm:notification];
+//    }
 
     [[NSNotificationCenter defaultCenter] postNotificationName:kLocalNotificationStarted
                                                     object:self
                                                     userInfo:RCTFormatUNNotification(notification)];
 }
 
-+ (void)didReceiveNotificationResponse:(UNNotificationResponse *)response
+- (void)didReceiveNotificationResponse:(UNNotificationResponse *)response
 API_AVAILABLE(ios(10.0)) {
     NSLog(@"show notification");
     [[UIApplication sharedApplication] setIdleTimerDisabled:NO];
     if ([response.notification.request.content.categoryIdentifier isEqualToString:@"CUSTOM_ACTIONS"]) {
        if ([response.actionIdentifier isEqualToString:@"SNOOZE_ACTION"]) {
-           [RnAlarmNotification snoozeAlarm:response.notification];
+           [self snoozeAlarm:response.notification];
        } else if ([response.actionIdentifier isEqualToString:@"DISMISS_ACTION"]) {
            NSLog(@"do dismiss");
-           [RnAlarmNotification stopSound];
+           [self stopSound];
            
            NSMutableDictionary *notification = [NSMutableDictionary dictionary];
            notification[@"id"] = response.notification.request.identifier;
@@ -223,73 +286,7 @@ API_AVAILABLE(ios(10.0)) {
     [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
-+ (void)playSound:(UNNotification *)notification  API_AVAILABLE(ios(10.0)){
-    @try {
-        NSString *soundName = [notification.request.content.userInfo objectForKey:@"sound_name"];
-        NSNumber *loopSound = [notification.request.content.userInfo objectForKey:@"loop_sound"];
-        NSString *volume = [notification.request.content.userInfo objectForKey:@"volume"];
-        
-        NSLog(@"do play sound now: %@", soundName);
-        NSLog(@"loop sound: %@", loopSound);
-        NSLog(@"volume sound: %@", volume);
-        
-//        AVAudioSession *session = [AVAudioSession sharedInstance];
-//        [session setCategory:AVAudioSessionCategoryPlayback
-//                 withOptions:AVAudioSessionCategoryOptionMixWithOthers
-//                       error:nil];
-//        [session setActive:true error:nil];
-        //[session setMode:AVAudioSessionModeDefault error:nil]; // optional
-        
-//        NSError *playerError = nil;
-        
-//        if([RnAlarmNotification checkStringIsNotEmpty:soundName]){
-//            NSLog(@"soundName: %@", soundName);
-//
-//            NSString *path = [[[NSBundle mainBundle] resourcePath] stringByAppendingPathComponent:soundName];
-//
-//            NSString* soundPathEscaped = [path stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
-//            NSURL *soundUri = [NSURL URLWithString:soundPathEscaped];
-//
-//            NSLog(@"sound path: %@", soundUri);
-//
-//            if(player){
-//                [player stop];
-//                player = nil;
-//            }
-//
-//            player = [[AVAudioPlayer alloc] initWithContentsOfURL:soundUri
-//                                                            error:&playerError];
-//
-//            if(playerError) {
-//                NSLog(@"[AppDelegate] audioPlayerError: %@", playerError);
-//            } else if (player){
-//                @synchronized(self){
-//                    player.delegate = (id<AVAudioPlayerDelegate>)self;;
-//                    player.enableRate = YES;
-//                    [player prepareToPlay];
-//
-//                    NSLog(@"sound volume: %@", RCTNullIfNil(volume));
-//                    // set volume
-//                    player.volume = [volume floatValue];
-//
-//                    NSLog(@"sound loop: %@", loopSound);
-//                    // enable/disable loop
-//                    if ([loopSound isEqualToNumber: [NSNumber numberWithInt: 1]]) {
-//                        player.numberOfLoops = -1;
-//                    } else {
-//                        player.numberOfLoops = 0;
-//                    }
-//
-//                    [player play];
-//                }
-//            }
-//        }
-    } @catch(NSException *exception){
-        NSLog(@"%@", exception.reason);
-    }
-}
-
-+ (void)stopSound {
+- (void)stopSound {
     @try {
         if (player) {
             [player stop];
@@ -300,48 +297,29 @@ API_AVAILABLE(ios(10.0)) {
     }
 }
 
-+ (void)repeatAlarm:(UNNotification *)notification  API_AVAILABLE(ios(10.0)) {
-    [RnAlarmNotification stopSound];
+- (void)repeatAlarm:(UNNotification *)notification  API_AVAILABLE(ios(10.0)) {
+    [self stopSound];
     
     @try {
         if (@available(iOS 10.0, *)) {
-            UNNotificationContent *contentInfo = notification.request.content;
-            UNMutableNotificationContent* content = [[UNMutableNotificationContent alloc] init];
+            NSString *alarmId = [notification.request.content.userInfo objectForKey:@"alarmId"];
+            AlarmConfig *alarmConfig = [[AlarmConfig alloc] initWitAlarmId:alarmId notification:notification];
             
-            content.title = contentInfo.title;
-            content.body = contentInfo.body;
-            
-            NSString *scheduleType = [contentInfo.userInfo objectForKey:@"schedule_type"];
-            NSLog(@"schedule type: %@", scheduleType);
-            
-            NSNumber *has_button = [contentInfo.userInfo objectForKey:@"has_button"];
-            
-            // set buttons
-            if([has_button isEqualToNumber: [NSNumber numberWithInt: 1]]){
-                content.categoryIdentifier = @"CUSTOM_ACTIONS";
-            }
-            
-            // set alarm date
-            NSString *fire_date = [contentInfo.userInfo objectForKey:@"fire_date"];
-            
-            NSDateComponents *fireDate = parseDate(fire_date);
-            
-            NSString *repeat_interval = [contentInfo.userInfo objectForKey:@"repeat_interval"];
-            NSNumber *interval_value = [contentInfo.userInfo objectForKey:@"interval_value"];
-            NSLog(@"schedule repeat interval %@", repeat_interval);
-            
-            if([repeat_interval isEqualToString:@"minutely"]){
-                fireDate.minute = fireDate.minute + [interval_value intValue];
-            } else if([repeat_interval isEqualToString:@"hourly"]) {
-                fireDate.hour = fireDate.hour + [interval_value intValue];
-            } else if([repeat_interval isEqualToString:@"daily"]) {
+            // alarm date
+            NSDateComponents *fireDate = alarmConfig.fireDateComponents;
+            NSString *repeatInterval = alarmConfig.repeatInterval;
+            NSNumber *intervalValue = alarmConfig.intervalValue;
+            NSLog(@"schedule repeat interval %@", repeatInterval);
+            if([repeatInterval isEqualToString:@"minutely"]){
+                fireDate.minute = fireDate.minute + [intervalValue intValue];
+            } else if([repeatInterval isEqualToString:@"hourly"]) {
+                fireDate.hour = fireDate.hour + [intervalValue intValue];
+            } else if([repeatInterval isEqualToString:@"daily"]) {
                 fireDate.day = fireDate.day + 1;
-            } else if([repeat_interval isEqualToString:@"weekly"]) {
+            } else if([repeatInterval isEqualToString:@"weekly"]) {
                 fireDate.weekday = fireDate.weekday + 1;
             }
-            
             NSLog(@"------ next fire date: %@", fireDate);
-            
             // date to string
             NSCalendar *gregorianCalendar = [[NSCalendar alloc] initWithCalendarIdentifier:NSCalendarIdentifierGregorian];
             NSDate *dateString = [gregorianCalendar dateFromComponents:fireDate];
@@ -349,52 +327,11 @@ API_AVAILABLE(ios(10.0)) {
             [formatter setDateFormat:@"dd-MM-yyyy HH:mm:ss"];
             NSString *stringFromDate = [formatter stringFromDate:dateString];
             NSLog(@"%@", stringFromDate);
-            
             UNCalendarNotificationTrigger* trigger = [UNCalendarNotificationTrigger triggerWithDateMatchingComponents:fireDate repeats:NO];
             
-            // alarm id
-            NSString *alarmId = [contentInfo.userInfo objectForKey:@"alarmId"];
+            NSLog(@"schedule type: %@", alarmConfig.scheduleType);
             
-            NSString *soundName = [contentInfo.userInfo objectForKey:@"sound_name"];
-            NSNumber *playSound = [contentInfo.userInfo objectForKey:@"sound"];
-            
-            content.userInfo = @{
-                @"alarmId": alarmId,
-                @"sound": playSound,
-                @"vibrate": [contentInfo.userInfo objectForKey:@"vibrate"],
-                @"data": [contentInfo.userInfo objectForKey:@"data"],
-                @"fire_date": stringFromDate,
-                @"sound_name": soundName,
-                @"loop_sound": [contentInfo.userInfo objectForKey:@"loop_sound"],
-                @"volume": [contentInfo.userInfo objectForKey:@"volume"],
-                @"has_button": [contentInfo.userInfo objectForKey:@"has_button"],
-                @"schedule_type": [contentInfo.userInfo objectForKey:@"schedule_type"],
-                @"repeat_interval": [contentInfo.userInfo objectForKey:@"repeat_interval"],
-                @"interval_value": [contentInfo.userInfo objectForKey:@"interval_value"],
-                @"snooze_interval": [contentInfo.userInfo objectForKey:@"snooze_interval"]
-            };
-            
-            if([playSound isEqualToNumber: [NSNumber numberWithInt: 1]]) {
-                BOOL notEmpty = [RnAlarmNotification checkStringIsNotEmpty:soundName];
-                if(notEmpty != YES){
-                    content.sound = UNNotificationSound.defaultSound;
-                } else {
-                    content.sound = [UNNotificationSound soundNamed:soundName];
-                }
-            }
-            
-            // Create the request object.
-            UNNotificationRequest* request = [UNNotificationRequest requestWithIdentifier:alarmId content:content trigger:trigger];
-            
-            UNUserNotificationCenter* center = [UNUserNotificationCenter currentNotificationCenter];
-            
-            [center addNotificationRequest:request withCompletionHandler:^(NSError * _Nullable error) {
-                if (error != nil) {
-                    NSLog(@"error: %@", error.localizedDescription);
-                }
-            }];
-            
-            NSDictionary *alarm = [NSDictionary dictionaryWithObjectsAndKeys: alarmId, @"id", nil];
+            NSDictionary * alarm = [self scheduleAlarmWithConfig:alarmConfig trigger:trigger];
             NSLog(@"repeat alarm: %@", alarm);
         } else {
             // Fallback on earlier versions
@@ -404,81 +341,25 @@ API_AVAILABLE(ios(10.0)) {
     }
 }
 
-+ (void)snoozeAlarm:(UNNotification *)notification  API_AVAILABLE(ios(10.0)) {
+- (void)snoozeAlarm:(UNNotification *)notification  API_AVAILABLE(ios(10.0)) {
     NSLog(@"do snooze");
-    [RnAlarmNotification stopSound];
+    [self stopSound];
     
     @try {
         if (@available(iOS 10.0, *)) {
-            UNNotificationContent *contentInfo = notification.request.content;
-            UNMutableNotificationContent* content = [[UNMutableNotificationContent alloc] init];
-            
-            content.title = contentInfo.title;
-            content.body = contentInfo.body;
-            
-            NSNumber *has_button = [contentInfo.userInfo objectForKey:@"has_button"];
-            NSNumber *snooze_interval = [contentInfo.userInfo objectForKey:@"snooze_interval"];
-            
-            // set buttons
-            if([has_button isEqualToNumber: [NSNumber numberWithInt: 1]]){
-                content.categoryIdentifier = @"CUSTOM_ACTIONS";
-            }
+            NSString *alarmId = [NSString stringWithFormat: @"%ld", (long) NSDate.date.timeIntervalSince1970];
+            AlarmConfig *alarmConfig = [[AlarmConfig alloc] initWitAlarmId:alarmId notification:notification];
             
             // set alarm date
-            int interval = [snooze_interval intValue];
-            NSTimeInterval snoozeInterval = interval * 60;
-            
+            NSTimeInterval snoozeInterval = [alarmConfig.snoozeInterval intValue] * 60;
             NSDate *now = [NSDate date];
             NSDate *newDate = [now dateByAddingTimeInterval:snoozeInterval];
             NSLog(@"new fire date after snooze: %@", newDate);
-            
             NSDateComponents *newFireDate = dateToComponents(newDate);
-            
             UNCalendarNotificationTrigger* trigger = [UNCalendarNotificationTrigger triggerWithDateMatchingComponents:newFireDate repeats:NO];
             
-            NSString *alarmId = [NSString stringWithFormat: @"%ld", (long) NSDate.date.timeIntervalSince1970];
+            NSDictionary * alarm = [self scheduleAlarmWithConfig:alarmConfig trigger:trigger];
             
-            NSString *soundName = [contentInfo.userInfo objectForKey:@"sound_name"];
-            NSNumber *playSound = [contentInfo.userInfo objectForKey:@"sound"];
-            
-            content.userInfo = @{
-                @"alarmId": alarmId,
-                @"sound": playSound,
-                @"vibrate": [contentInfo.userInfo objectForKey:@"vibrate"],
-                @"data": [contentInfo.userInfo objectForKey:@"data"],
-                @"fire_date": [contentInfo.userInfo objectForKey:@"fire_date"],
-                @"sound_name": soundName,
-                @"loop_sound": [contentInfo.userInfo objectForKey:@"loop_sound"],
-                @"volume": [contentInfo.userInfo objectForKey:@"volume"],
-                @"has_button": [contentInfo.userInfo objectForKey:@"has_button"],
-                @"schedule_type": [contentInfo.userInfo objectForKey:@"schedule_type"],
-                @"repeat_interval": [contentInfo.userInfo objectForKey:@"repeat_interval"],
-                @"interval_value": [contentInfo.userInfo objectForKey:@"interval_value"],
-                @"snooze_interval": [contentInfo.userInfo objectForKey:@"snooze_interval"]
-            };
-            
-            if([playSound isEqualToNumber: [NSNumber numberWithInt: 1]]) {
-                BOOL notEmpty = [RnAlarmNotification checkStringIsNotEmpty:soundName];
-                if(notEmpty != YES){
-                    NSLog(@"use default sound");
-                    content.sound = UNNotificationSound.defaultSound;
-                } else {
-                    content.sound = [UNNotificationSound soundNamed:soundName];
-                }
-            }
-            
-            // Create the request object.
-            UNNotificationRequest* request = [UNNotificationRequest requestWithIdentifier:alarmId content:content trigger:trigger];
-            
-            UNUserNotificationCenter* center = [UNUserNotificationCenter currentNotificationCenter];
-            
-            [center addNotificationRequest:request withCompletionHandler:^(NSError * _Nullable error) {
-                if (error != nil) {
-                    NSLog(@"error: %@", error.localizedDescription);
-                }
-            }];
-            
-            NSDictionary *alarm = [NSDictionary dictionaryWithObjectsAndKeys: alarmId, @"id", nil];
             NSLog(@"snooze alarm: %@", alarm);
         } else {
             // Fallback on earlier versions
@@ -493,68 +374,125 @@ API_AVAILABLE(ios(10.0)) {
     return YES;
 }
 
+- (NSDictionary *)scheduleAlarmWithConfig:(AlarmConfig *)alarmConfig trigger:(UNCalendarNotificationTrigger *)trigger  API_AVAILABLE(ios(10.0)){
+    /// SOUND
+    NSString *soundName = alarmConfig.soundName;
+    NSNumber *loopSound = alarmConfig.loopSound;
+    NSString *volume = alarmConfig.volume;
+    AVAudioSession *session = [AVAudioSession sharedInstance];
+    [session setCategory:AVAudioSessionCategoryPlayback
+             withOptions:AVAudioSessionCategoryOptionDefaultToSpeaker
+                   error:nil];
+    [session setActive:true error:nil];
+    [session setMode:AVAudioSessionModeDefault error:nil]; // optional
+    NSError *playerError = nil;
+    NSLog(@"### SOUND");
+    
+    if([RnAlarmNotification checkStringIsNotEmpty:soundName]){
+        NSLog(@"soundName: %@", soundName);
+
+        NSString *path = [[[NSBundle mainBundle] resourcePath] stringByAppendingPathComponent:soundName];
+
+        NSString* soundPathEscaped = [path stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
+        NSURL *soundUri = [NSURL URLWithString:soundPathEscaped];
+
+        NSLog(@"sound path: %@", soundUri);
+
+        if(player){
+            [player stop];
+            player = nil;
+        }
+
+        player = [[AVAudioPlayer alloc] initWithContentsOfURL:soundUri
+                                                        error:&playerError];
+
+        if(playerError) {
+            NSLog(@"[AppDelegate] audioPlayerError: %@", playerError);
+        } else if (player){
+            @synchronized(self){
+                player.delegate = (id<AVAudioPlayerDelegate>)self;;
+                player.enableRate = YES;
+                [player prepareToPlay];
+
+                NSLog(@"sound volume: %@", RCTNullIfNil(volume));
+                // set volume
+                player.volume = [volume floatValue];
+
+                NSLog(@"sound loop: %@", loopSound);
+                // enable/disable loop
+                if ([loopSound isEqualToNumber: [NSNumber numberWithInt: 1]]) {
+                    player.numberOfLoops = -1;
+                } else {
+                    player.numberOfLoops = 0;
+                }
+
+//                [self setVolume: [volume floatValue] showingUI:true];
+
+                NSCalendar *calendar = [[NSCalendar alloc] initWithCalendarIdentifier:NSCalendarIdentifierGregorian];
+                
+                NSDateComponents *fireDate = trigger.dateComponents;
+                if (fireDate) {
+                    NSTimeInterval interval = [[calendar dateFromComponents:fireDate] timeIntervalSinceNow];
+                    NSLog(@"fireDate: %@ %g", fireDate, interval);
+                    [player playAtTime: [player deviceCurrentTime] + interval];
+                } else {
+                    [player play];
+                }
+            }
+        }
+    }
+    
+    
+    
+    /// NOTIFICATION
+    NSLog(@"### NOTIFICATION");
+    UNMutableNotificationContent* content = [[UNMutableNotificationContent alloc] init];
+    
+    content.title = alarmConfig.title;
+    content.body = alarmConfig.body;
+    content.userInfo = alarmConfig.dictionary;
+    
+    // set buttons
+    NSNumber *hasButton = alarmConfig.hasButton;
+    if([hasButton isEqualToNumber: [NSNumber numberWithInt: 1]]){
+        content.categoryIdentifier = @"CUSTOM_ACTIONS";
+    }
+    
+    NSNumber *playSound = alarmConfig.playSound;
+    if([playSound isEqualToNumber: [NSNumber numberWithInt: 1]]) {
+        BOOL notEmpty = [RnAlarmNotification checkStringIsNotEmpty:soundName];
+        if(notEmpty != YES){
+            content.sound = UNNotificationSound.defaultSound;
+        } else {
+//            content.sound = [UNNotificationSound soundNamed:@"silence.mp3"];
+//            content.sound = [UNNotificationSound soundNamed:soundName];
+        }
+    }
+    
+    // Create the request object.
+    UNNotificationRequest* request = [UNNotificationRequest requestWithIdentifier:alarmConfig.alarmId content:content trigger:trigger];
+    
+    UNUserNotificationCenter* center = [UNUserNotificationCenter currentNotificationCenter];
+    
+    [center addNotificationRequest:request withCompletionHandler:^(NSError * _Nullable error) {
+        if (error != nil) {
+            NSLog(@"error: %@", error.localizedDescription);
+        }
+    }];
+    
+    NSDictionary *alarm = [NSDictionary dictionaryWithObjectsAndKeys: alarmConfig.alarmId, @"id", nil];
+    return alarm;
+}
+
 RCT_EXPORT_METHOD(scheduleAlarm: (NSDictionary *)details resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject){
     @try {
         if (@available(iOS 10.0, *)) {
-            UNMutableNotificationContent* content = [[UNMutableNotificationContent alloc] init];
-            
-            content.title = [NSString localizedUserNotificationStringForKey:details[@"title"] arguments:nil];
-            content.body = [NSString localizedUserNotificationStringForKey:details[@"message"] arguments:nil];
-            
-            // set buttons
-            if([details[@"has_button"] isEqualToNumber: [NSNumber numberWithInt: 1]]){
-                content.categoryIdentifier = @"CUSTOM_ACTIONS";
-            }
-            
-            // set alarm date
-            NSDateComponents *fireDate = parseDate(details[@"fire_date"]);
-            
-            UNCalendarNotificationTrigger* trigger = [UNCalendarNotificationTrigger triggerWithDateMatchingComponents:fireDate repeats:NO];
-            
-            // alarm id
             NSString *alarmId = [NSString stringWithFormat: @"%ld", (long) NSDate.date.timeIntervalSince1970];
+            AlarmConfig *alarmConfig = [[AlarmConfig alloc] initWitAlarmId:alarmId dictionary:details];
             
-            NSString *volume = [details[@"volume"] stringValue];
-            
-            content.userInfo = @{
-                @"alarmId": alarmId,
-                @"sound": details[@"play_sound"],
-                @"vibrate": details[@"vibrate"],
-                @"data": details[@"data"],
-                @"fire_date": details[@"fire_date"],
-                @"sound_name": details[@"sound_name"],
-                @"loop_sound": details[@"loop_sound"],
-                @"volume": volume,
-                @"has_button": details[@"has_button"],
-                @"schedule_type": details[@"schedule_type"],
-                @"repeat_interval": details[@"repeat_interval"],
-                @"interval_value": details[@"interval_value"],
-                @"snooze_interval": details[@"snooze_interval"]
-            };
-            
-            if([details[@"play_sound"] isEqualToNumber: [NSNumber numberWithInt: 1]]) {
-                BOOL notEmpty = [RnAlarmNotification checkStringIsNotEmpty:details[@"sound_name"]];
-                if(notEmpty != YES){
-                    content.sound = UNNotificationSound.defaultSound;
-                } else {
-                    content.sound = [UNNotificationSound soundNamed:details[@"sound_name"]];
-                }
-            }
-            
-            // Create the request object.
-            UNNotificationRequest* request = [UNNotificationRequest requestWithIdentifier:alarmId content:content trigger:trigger];
-            
-            UNUserNotificationCenter* center = [UNUserNotificationCenter currentNotificationCenter];
-            
-            [center addNotificationRequest:request withCompletionHandler:^(NSError * _Nullable error) {
-                if (error != nil) {
-                    NSLog(@"error: %@", error.localizedDescription);
-                    reject(@"error", nil, error);
-                }
-            }];
-            
-            NSDictionary *alarm = [NSDictionary dictionaryWithObjectsAndKeys: alarmId, @"id", nil];
-            
+            NSDateComponents *fireDate = alarmConfig.fireDateComponents;
+            UNCalendarNotificationTrigger* trigger = [UNCalendarNotificationTrigger triggerWithDateMatchingComponents:fireDate repeats:NO];
+            NSDictionary * alarm = [self scheduleAlarmWithConfig:alarmConfig trigger:trigger];
             resolve(alarm);
         } else {
             // Fallback on earlier versions
@@ -570,52 +508,16 @@ RCT_EXPORT_METHOD(scheduleAlarm: (NSDictionary *)details resolver:(RCTPromiseRes
         NSError *error = [[NSError alloc] initWithDomain:exception.name code:0 userInfo:info];
         reject(@"error", nil, error);
     }
+    
 }
 
 RCT_EXPORT_METHOD(sendNotification: (NSDictionary *)details) {
     @try {
         NSLog(@"send notification now");
         if (@available(iOS 10.0, *)) {
-            UNMutableNotificationContent* content = [[UNMutableNotificationContent alloc] init];
-            content.title = [NSString localizedUserNotificationStringForKey:details[@"title"] arguments:nil];
-            content.body = [NSString localizedUserNotificationStringForKey:details[@"message"] arguments:nil];
-            
-            // set buttons
-            if([details[@"has_button"] isEqualToNumber: [NSNumber numberWithInt: 1]]){
-                content.categoryIdentifier = @"CUSTOM_ACTIONS";
-            }
-            
-            // alarm id
             NSString *alarmId = [NSString stringWithFormat: @"%ld", (long) NSDate.date.timeIntervalSince1970];
-            
-            NSString *volume = [details[@"volume"] stringValue];
-            
-            content.userInfo = @{
-                @"alarmId": alarmId,
-                @"sound": details[@"play_sound"],
-                @"vibrate": details[@"vibrate"],
-                @"data": details[@"data"],
-                @"sound_name": details[@"sound_name"],
-                @"loop_sound": details[@"loop_sound"],
-                @"volume": volume,
-                @"schedule_type": @"once"
-            };
-            
-            if([details[@"play_sound"] isEqualToNumber: [NSNumber numberWithInt: 1]]) {
-                BOOL notEmpty = [RnAlarmNotification checkStringIsNotEmpty:details[@"sound_name"]];
-                if(notEmpty != YES){
-                    content.sound = UNNotificationSound.defaultSound;
-                } else {
-                    content.sound = [UNNotificationSound soundNamed:details[@"sound_name"]];
-                }
-            }
-            
-            // Create the request object.
-            UNNotificationRequest* request = [UNNotificationRequest requestWithIdentifier:alarmId content:content trigger:nil];
-            
-            UNUserNotificationCenter* center = [UNUserNotificationCenter currentNotificationCenter];
-            
-            [center addNotificationRequest:request withCompletionHandler:^(NSError * _Nullable error) { }];
+            AlarmConfig *alarmConfig = [[AlarmConfig alloc] initWitAlarmId:alarmId dictionary:details];
+            [self scheduleAlarmWithConfig:alarmConfig trigger:nil];
         } else {
             // Fallback on earlier versions
         }
@@ -648,7 +550,7 @@ RCT_EXPORT_METHOD(deleteRepeatingAlarm: (NSInteger *)id){
 
 RCT_EXPORT_METHOD(stopAlarmSound){
     NSLog(@"stop alarm sound");
-    [RnAlarmNotification stopSound];
+    [self stopSound];
 }
 
 RCT_EXPORT_METHOD(removeFiredNotification: (NSInteger)id){
@@ -674,24 +576,6 @@ RCT_EXPORT_METHOD(removeAllFiredNotifications){
     }
 }
 
-API_AVAILABLE(ios(10.0))
-static NSDictionary *RCTFormatUNNotificationRequest(UNNotificationRequest *request)
-{
-    NSMutableDictionary *formattedNotification = [NSMutableDictionary dictionary];
-    UNNotificationContent *content = request.content;
-    
-    NSDateComponents *fireDate = parseDate(content.userInfo[@"fire_date"]);
-
-    formattedNotification[@"id"] = request.identifier;
-    formattedNotification[@"day"] = [NSString stringWithFormat:@"%li", (long)fireDate.day];
-    formattedNotification[@"month"] = [NSString stringWithFormat:@"%li", (long)fireDate.month];
-    formattedNotification[@"year"] = [NSString stringWithFormat:@"%li", (long)fireDate.year];
-    formattedNotification[@"hour"] = [NSString stringWithFormat:@"%li", (long)fireDate.hour];
-    formattedNotification[@"minute"] =[NSString stringWithFormat:@"%li", (long)fireDate.minute];
-    formattedNotification[@"second"] = [NSString stringWithFormat:@"%li", (long)fireDate.second];
-
-    return formattedNotification;
-}
 
 RCT_EXPORT_METHOD(getScheduledAlarms: (RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject){
     NSLog(@"get all notifications");
@@ -711,6 +595,11 @@ RCT_EXPORT_METHOD(getScheduledAlarms: (RCTPromiseResolveBlock)resolve rejecter:(
     } else {
         resolve(nil);
     }
+}
+
+RCT_EXPORT_METHOD(isAlarmPlaying: (RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject){
+    NSNumber * result = [NSNumber numberWithBool:[player isPlaying]];
+    resolve(result);
 }
 
 RCT_EXPORT_METHOD(requestPermissions:(NSDictionary *)permissions
@@ -797,13 +686,5 @@ RCT_EXPORT_METHOD(checkPermissions:(RCTResponseSenderBlock)callback) {
     }
 }
 
-API_AVAILABLE(ios(10.0))
-static inline NSDictionary *RCTPromiseResolveValueForUNNotificationSettings(UNNotificationSettings* _Nonnull settings) {
-    return RCTSettingsDictForUNNotificationSettings(settings.alertSetting == UNNotificationSettingEnabled, settings.badgeSetting == UNNotificationSettingEnabled, settings.soundSetting == UNNotificationSettingEnabled, settings.lockScreenSetting == UNNotificationSettingEnabled, settings.notificationCenterSetting == UNNotificationSettingEnabled);
-}
-
-static inline NSDictionary *RCTSettingsDictForUNNotificationSettings(BOOL alert, BOOL badge, BOOL sound, BOOL lockScreen, BOOL notificationCenter) {
-    return @{@"alert": @(alert), @"badge": @(badge), @"sound": @(sound), @"lockScreen": @(lockScreen), @"notificationCenter": @(notificationCenter)};
-}
 
 @end

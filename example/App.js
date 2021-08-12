@@ -51,6 +51,12 @@ class App extends Component {
 		update: [],
 		futureFireDate: '0.1',
 		alarmId: null,
+		alarmPlaying: undefined,
+	};
+
+	isAlarmPlaying = async () => {
+		const alarmPlaying = await ReactNativeAN.isAlarmPlaying();
+		this.setState({alarmPlaying});
 	};
 
 	setAlarm = async () => {
@@ -278,6 +284,14 @@ class App extends Component {
 							color="#007fff"
 						/>
 					</View>
+					<View style={styles.margin}>
+						<Button
+							onPress={this.isAlarmPlaying}
+							title="Is Alarm Playing"
+							color="#841584"
+						/>
+					</View>
+					<Text>{`${this.state.alarmPlaying}`}</Text>
 					<View style={styles.margin}>
 						<Button
 							onPress={this.stopAlarmSound}

@@ -201,19 +201,19 @@ RCT_EXPORT_MODULE(RNAlarmNotification);
 }
 
 - (void) didReceiveNotification:(UNNotification *)notification  API_AVAILABLE(ios(10.0)){
-//    AlarmConfig *alarmConfig = [[AlarmConfig alloc] initWitAlarmId:notification.request.identifier notification:notification];
-//    NSLog(@"content: %@", alarmConfig.dictionary);
-//
-//    NSNumber *vibrate = alarmConfig.vibrate;
-//    if([vibrate isEqualToNumber: [NSNumber numberWithInt: 1]]){
-//        NSLog(@"do vibrate now");
-//        [self vibratePhone];
-//    }
-//
-//    NSString *scheduleType = alarmConfig.scheduleType;
-//    if([scheduleType isEqualToString:@"repeat"]){
-//        [self repeatAlarm:notification];
-//    }
+    AlarmConfig *alarmConfig = [[AlarmConfig alloc] initWitAlarmId:notification.request.identifier notification:notification];
+    NSLog(@"content: %@", alarmConfig.dictionary);
+
+    NSNumber *vibrate = alarmConfig.vibrate;
+    if([vibrate isEqualToNumber: [NSNumber numberWithInt: 1]]){
+        NSLog(@"do vibrate now");
+        [self vibratePhone];
+    }
+
+    NSString *scheduleType = alarmConfig.scheduleType;
+    if([scheduleType isEqualToString:@"repeat"]){
+        [self repeatAlarm:notification];
+    }
 
     [[NSNotificationCenter defaultCenter] postNotificationName:kLocalNotificationStarted
                                                     object:self
@@ -426,7 +426,7 @@ API_AVAILABLE(ios(10.0)) {
                     player.numberOfLoops = 0;
                 }
 
-//                [self setVolume: [volume floatValue] showingUI:true];
+                [self setVolume: [volume floatValue] showingUI:true];
 
                 NSCalendar *calendar = [[NSCalendar alloc] initWithCalendarIdentifier:NSCalendarIdentifierGregorian];
                 
@@ -463,9 +463,6 @@ API_AVAILABLE(ios(10.0)) {
         BOOL notEmpty = [RnAlarmNotification checkStringIsNotEmpty:soundName];
         if(notEmpty != YES){
             content.sound = UNNotificationSound.defaultSound;
-        } else {
-//            content.sound = [UNNotificationSound soundNamed:@"silence.mp3"];
-//            content.sound = [UNNotificationSound soundNamed:soundName];
         }
     }
     

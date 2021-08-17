@@ -42,7 +42,7 @@ import static com.emekalites.react.alarm.notification.Constants.ADD_INTENT;
 import static com.emekalites.react.alarm.notification.Constants.NOTIFICATION_ACTION_DISMISS;
 import static com.emekalites.react.alarm.notification.Constants.NOTIFICATION_ACTION_SNOOZE;
 
-class AlarmUtil {
+public class AlarmUtil {
     private static final String TAG = AlarmUtil.class.getSimpleName();
 
     private Context mContext;
@@ -50,7 +50,7 @@ class AlarmUtil {
     static private boolean alarmPlaying = false;
     static final long[] DEFAULT_VIBRATE_PATTERN = {0, 250, 250, 250};
 
-    AlarmUtil(Application context) {
+    public AlarmUtil(Application context) {
         mContext = context;
 
         audioInterface = AudioInterface.getInstance();
@@ -342,7 +342,7 @@ class AlarmUtil {
         return PendingIntent.getBroadcast(context.getApplicationContext(), notificationId, intent, 0);
     }
 
-    void sendNotification(AlarmModel alarm) {
+    public void sendNotification(AlarmModel alarm) {
         try {
             Class intentClass = getMainActivityClass();
 

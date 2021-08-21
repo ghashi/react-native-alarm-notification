@@ -16,6 +16,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.media.AudioAttributes;
+import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Build;
@@ -47,12 +48,15 @@ public class AlarmUtil {
 
     private Context mContext;
     private AudioInterface audioInterface;
+    private AudioManager audioManager;
+    static private int volumeBeforePlayingAlarm;
     static private boolean alarmPlaying = false;
     static final long[] DEFAULT_VIBRATE_PATTERN = {0, 250, 250, 250};
 
     public AlarmUtil(Application context) {
         mContext = context;
 
+        audioManager = (AudioManager)mContext.getSystemService(Context.AUDIO_SERVICE);
         audioInterface = AudioInterface.getInstance();
         audioInterface.init(mContext);
     }
@@ -90,6 +94,10 @@ public class AlarmUtil {
         alarmPlaying = true;
 
         float number = (float) volume;
+
+        int maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+        volumeBeforePlayingAlarm = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
+        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, maxVolume, 0);
 
         MediaPlayer mediaPlayer = audioInterface.getSingletonMedia(name, names);
         mediaPlayer.setLooping(shouldLoop);
@@ -538,6 +546,8 @@ public class AlarmUtil {
                 vibrator.cancel();
             }
             audioInterface.stopPlayer();
+            Log.e(TAG, "reset volume: " + volumeBeforePlayingAlarm);
+            audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, volumeBeforePlayingAlarm, 0);
         } catch (Exception e) {
             e.printStackTrace();
         }

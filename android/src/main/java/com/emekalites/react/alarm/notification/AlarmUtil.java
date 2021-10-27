@@ -34,6 +34,7 @@ import com.facebook.react.bridge.WritableNativeMap;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
@@ -99,9 +100,28 @@ public class AlarmUtil {
         volumeBeforePlayingAlarm = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
         audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, maxVolume, 0);
 
-        MediaPlayer mediaPlayer = audioInterface.getSingletonMedia(name, names);
+        MediaPlayer mediaPlayer = new MediaPlayer();
         mediaPlayer.setLooping(shouldLoop);
         mediaPlayer.setVolume(number, number);
+
+//        https://stackoverflow.com/a/50882009/3670829
+        if (Build.VERSION.SDK_INT >= 21) {
+            mediaPlayer.setAudioAttributes(new AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_ALARM)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .setLegacyStreamType(AudioManager.STREAM_ALARM)
+                    .build());
+        } else {
+            mediaPlayer.setAudioStreamType(AudioManager.STREAM_ALARM);
+        }
+
+        try {
+            String filename = "android.resource://" + mContext.getPackageName() + "/raw/" + name;
+            mediaPlayer.setDataSource(mContext,Uri.parse(filename));
+            mediaPlayer.prepare();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         mediaPlayer.start();
 
         mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
@@ -437,9 +457,9 @@ public class AlarmUtil {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 NotificationChannel mChannel = new NotificationChannel(channelID, "Alarm Notify", NotificationManager.IMPORTANCE_HIGH);
                 AudioAttributes audioAttributes = new AudioAttributes.Builder()
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .setUsage(AudioAttributes.USAGE_NOTIFICATION)
-                    .build();
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                        .build();
                 mChannel.setSound(soundUri, audioAttributes);
                 mChannel.enableLights(true);
 
@@ -449,7 +469,7 @@ public class AlarmUtil {
                 }
 
                 if(!mChannel.canBypassDnd()){
-                    mChannel.setBypassDnd(alarm.isBypassDnd());
+                   mChannel.setBypassDnd(alarm.isBypassDnd());
                 }
 
                 mChannel.setVibrationPattern(null);

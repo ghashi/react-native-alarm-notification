@@ -25,7 +25,6 @@ public class AlarmModel implements Serializable {
     private String largeIcon;
     private boolean playSound = true;
     private String soundName;
-    private String soundNames;                 // separate sounds with comma eg (sound1.mp3,sound2.mp3)
     private String color = "red";
     private String scheduleType = "once";      // once or repeat
     private String interval = "hourly";                       // hourly, daily, weekly
@@ -193,14 +192,6 @@ public class AlarmModel implements Serializable {
         this.soundName = soundName;
     }
 
-    public String getSoundNames() {
-        return soundNames;
-    }
-
-    public void setSoundNames(String soundNames) {
-        this.soundNames = soundNames;
-    }
-
     public String getColor() {
         return color;
     }
@@ -331,7 +322,6 @@ public class AlarmModel implements Serializable {
                 ", largeIcon='" + largeIcon + '\'' +
                 ", playSound=" + playSound +
                 ", soundName='" + soundName + '\'' +
-                ", soundNames='" + soundNames + '\'' +
                 ", color='" + color + '\'' +
                 ", scheduleType='" + scheduleType + '\'' +
                 ", interval=" + interval +

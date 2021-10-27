@@ -91,7 +91,7 @@ public class AlarmUtil {
         return (NotificationManager) mContext.getSystemService(Context.NOTIFICATION_SERVICE);
     }
 
-    private void playAlarmSound(String name, String names, boolean shouldLoop, double volume) {
+    private void playAlarmSound(String name, boolean shouldLoop, double volume) {
         alarmPlaying = true;
 
         float number = (float) volume;
@@ -381,7 +381,7 @@ public class AlarmUtil {
 
             boolean playSound = alarm.isPlaySound();
             if (playSound) {
-                this.playAlarmSound(alarm.getSoundName(), alarm.getSoundNames(), alarm.isLoopSound(), alarm.getVolume());
+                this.playAlarmSound(alarm.getSoundName(), alarm.isLoopSound(), alarm.getVolume());
             }
 
             NotificationManager mNotificationManager = getNotificationManager();

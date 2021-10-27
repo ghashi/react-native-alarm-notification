@@ -79,7 +79,6 @@ public class ANModule extends ReactContextBaseJavaModule {
         alarm.setSmallIcon(bundle.getString("small_icon", "ic_launcher"));
         alarm.setSnoozeInterval((int)bundle.getDouble("snooze_interval", 1.0));
         alarm.setSoundName(bundle.getString("sound_name", null));
-        alarm.setSoundNames(bundle.getString("sound_names", null));
         alarm.setTag(bundle.getString("tag", ""));
         alarm.setTicker(bundle.getString("ticker", ""));
         alarm.setTitle(bundle.getString("title", "My Notification Title"));
@@ -161,7 +160,6 @@ public class ANModule extends ReactContextBaseJavaModule {
         alarm.setSmallIcon(bundle.getString("small_icon", "ic_launcher"));
         alarm.setSnoozeInterval((int)bundle.getDouble("snooze_interval", 1));
         alarm.setSoundName(bundle.getString("sound_name"));
-        alarm.setSoundNames(bundle.getString("sound_names"));
         alarm.setTag(bundle.getString("tag"));
         alarm.setTicker(bundle.getString("ticker"));
         alarm.setTitle(bundle.getString("title", "My Notification Title"));

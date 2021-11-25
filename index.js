@@ -157,6 +157,8 @@ ReactNativeAN.parseDate = (rawDate) => {
   let hours;
   let day;
   let month;
+  let minutes;
+  let seconds;
 
   if (rawDate.getHours().toString().length === 1) {
     hours = `0${rawDate.getHours()}`;
@@ -176,7 +178,19 @@ ReactNativeAN.parseDate = (rawDate) => {
     month = `${rawDate.getMonth() + 1}`;
   }
 
-  return `${day}-${month}-${rawDate.getFullYear()} ${hours}:${rawDate.getMinutes()}:${rawDate.getSeconds()}`;
+  if (rawDate.getMinutes().toString().length === 1) {
+    minutes = `0${rawDate.getMinutes()}`;
+  } else {
+    minutes = `${rawDate.getMinutes()}`;
+  }
+
+  if (rawDate.getSeconds().toString().length === 1) {
+    seconds = `0${rawDate.getSeconds()}`;
+  } else {
+    seconds = `${rawDate.getSeconds()}`;
+  }
+
+  return `${day}-${month}-${rawDate.getFullYear()} ${hours}:${minutes}:${seconds}`;
 };
 
 export default ReactNativeAN;

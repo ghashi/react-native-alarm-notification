@@ -100,28 +100,7 @@ public class AlarmUtil {
         volumeBeforePlayingAlarm = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
         audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, maxVolume, 0);
 
-        MediaPlayer mediaPlayer = new MediaPlayer();
-        mediaPlayer.setLooping(shouldLoop);
-        mediaPlayer.setVolume(number, number);
-
-//        https://stackoverflow.com/a/50882009/3670829
-        if (Build.VERSION.SDK_INT >= 21) {
-            mediaPlayer.setAudioAttributes(new AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_ALARM)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .setLegacyStreamType(AudioManager.STREAM_ALARM)
-                    .build());
-        } else {
-            mediaPlayer.setAudioStreamType(AudioManager.STREAM_ALARM);
-        }
-
-        try {
-            String filename = "android.resource://" + mContext.getPackageName() + "/raw/" + name;
-            mediaPlayer.setDataSource(mContext,Uri.parse(filename));
-            mediaPlayer.prepare();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        MediaPlayer mediaPlayer = audioInterface.getPlayerForFilename(name, number, shouldLoop);
         mediaPlayer.start();
 
         mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
@@ -231,7 +210,9 @@ public class AlarmUtil {
         String scheduleType = alarm.getScheduleType();
 
         if (scheduleType.equals("once")) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), alarmIntent);
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
                 alarmManager.setExact(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), alarmIntent);
             } else {
                 alarmManager.set(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), alarmIntent);

@@ -58,6 +58,8 @@ public class AlarmUtil {
         mContext = context;
 
         audioManager = (AudioManager)mContext.getSystemService(Context.AUDIO_SERVICE);
+        volumeBeforePlayingAlarm = audioManager.getStreamVolume(AudioManager.STREAM_ALARM);
+
         audioInterface = AudioInterface.getInstance();
         audioInterface.init(mContext);
     }
@@ -96,9 +98,9 @@ public class AlarmUtil {
 
         float number = (float) volume;
 
-        int maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
-        volumeBeforePlayingAlarm = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
-        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, maxVolume, 0);
+        int maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM);
+        volumeBeforePlayingAlarm = audioManager.getStreamVolume(AudioManager.STREAM_ALARM);
+        audioManager.setStreamVolume(AudioManager.STREAM_ALARM, maxVolume, 0);
 
         MediaPlayer mediaPlayer = audioInterface.getPlayerForFilename(name, number, shouldLoop);
         mediaPlayer.start();
@@ -545,8 +547,8 @@ public class AlarmUtil {
                 vibrator.cancel();
             }
             audioInterface.stopPlayer();
-            Log.e(TAG, "reset volume: " + volumeBeforePlayingAlarm);
-            audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, volumeBeforePlayingAlarm, 0);
+            Log.e(TAG, "stopAlarmSound ~ setStreamVolume: " + volumeBeforePlayingAlarm + " " + audioManager.getStreamVolume(AudioManager.STREAM_ALARM));
+            audioManager.setStreamVolume(AudioManager.STREAM_ALARM, volumeBeforePlayingAlarm, 0);
         } catch (Exception e) {
             e.printStackTrace();
         }

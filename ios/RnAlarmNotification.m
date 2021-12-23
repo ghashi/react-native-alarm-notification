@@ -19,6 +19,7 @@ static id _sharedInstance = nil;
 
 @implementation RnAlarmNotification
 
+bool hasListeners;
 AVAudioPlayer *player;
 MPVolumeView *volumeView;
 UISlider *volumeSlider;
@@ -143,7 +144,11 @@ static NSDateComponents *dateToComponents(NSDate *date) {
 }
 
 static NSString *stringify(NSDictionary *notification) {
-    NSError *error;
+    if (![NSJSONSerialization isValidJSONObject:notification]) {
+        return @"invalid json";
+    }
+
+    NSError *error = nil;
     NSData *jsonData = [NSJSONSerialization dataWithJSONObject:notification options:0 error:&error];
     
     if (! jsonData) {
@@ -246,7 +251,11 @@ API_AVAILABLE(ios(10.0)) {
                                                       userInfo:RCTFormatUNNotification(response.notification)];
 }
 
+// Will be called when this module's first listener is added.
 - (void)startObserving {
+    NSLog(@"RnAlarmNotification ~ startObserving")
+    hasListeners = YES;
+
     // receive notification
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(handleLocalNotificationReceived:) name:kLocalNotificationReceived
@@ -263,23 +272,51 @@ API_AVAILABLE(ios(10.0)) {
                                                object:nil];
 }
 
+// Will be called when this module's last listener is removed, or on dealloc.
+-(void)stopObserving {
+    NSLog(@"RnAlarmNotification ~ stopObserving")
+    hasListeners = NO;
+
+    // receive notification
+    [[NSNotificationCenter defaultCenter] removeObserver:self
+                                             name:kLocalNotificationReceived
+                                               object:nil];
+    // dismiss notification
+    [[NSNotificationCenter defaultCenter] removeObserver:self
+                                              name:kLocalNotificationDismissed
+                                               object:nil];
+    // start notification
+    [[NSNotificationCenter defaultCenter] removeObserver:self
+                                              name:kLocalNotificationStarted
+                                               object:nil];
+}
+
 - (NSArray<NSString *> *)supportedEvents {
     return @[@"OnNotificationOpened", @"OnNotificationStarted", @"OnNotificationDismissed"];
 }
 
 - (void)handleLocalNotificationReceived:(NSNotification *)notification {
+    NSLog(@"RnAlarmNotification ~ handleLocalNotificationReceived - %@", hasListeners ? @"true" : @"false")
     // send to js
-    [self sendEventWithName:@"OnNotificationOpened" body: stringify(notification.userInfo)];
+    if (hasListeners) { 
+        [self sendEventWithName:@"OnNotificationOpened" body: stringify(notification.userInfo)];
+    }
 }
 
 - (void)handleLocalNotificationDismissed:(NSNotification *)notification {
+    NSLog(@"RnAlarmNotification ~ handleLocalNotificationDismissed - %@", hasListeners ? @"true" : @"false")
     // send to js
-    [self sendEventWithName:@"OnNotificationDismissed" body: stringify(notification.userInfo)];
+    if (hasListeners) { 
+        [self sendEventWithName:@"OnNotificationDismissed" body: stringify(notification.userInfo)];
+    }
 }
 
 - (void)handleLocalNotificationStarted:(NSNotification *)notification {
+    NSLog(@"RnAlarmNotification ~ handleLocalNotificationStarted - %@", hasListeners ? @"true" : @"false")
     // send to js
-    [self sendEventWithName:@"OnNotificationStarted" body: stringify(notification.userInfo)];
+    if (hasListeners) { 
+        [self endEventWithName:@"OnNotificationStarted" body: stringify(notification.userInfo)];
+    }
 }
 
 - (void)stopObserving {

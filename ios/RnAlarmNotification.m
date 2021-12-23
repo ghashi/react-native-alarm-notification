@@ -253,7 +253,7 @@ API_AVAILABLE(ios(10.0)) {
 
 // Will be called when this module's first listener is added.
 - (void)startObserving {
-    NSLog(@"RnAlarmNotification ~ startObserving")
+    NSLog(@"RnAlarmNotification ~ startObserving");
     hasListeners = YES;
 
     // receive notification
@@ -273,22 +273,10 @@ API_AVAILABLE(ios(10.0)) {
 }
 
 // Will be called when this module's last listener is removed, or on dealloc.
--(void)stopObserving {
-    NSLog(@"RnAlarmNotification ~ stopObserving")
+- (void)stopObserving {
+    NSLog(@"RnAlarmNotification ~ stopObserving");
     hasListeners = NO;
-
-    // receive notification
-    [[NSNotificationCenter defaultCenter] removeObserver:self
-                                             name:kLocalNotificationReceived
-                                               object:nil];
-    // dismiss notification
-    [[NSNotificationCenter defaultCenter] removeObserver:self
-                                              name:kLocalNotificationDismissed
-                                               object:nil];
-    // start notification
-    [[NSNotificationCenter defaultCenter] removeObserver:self
-                                              name:kLocalNotificationStarted
-                                               object:nil];
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
 - (NSArray<NSString *> *)supportedEvents {
@@ -296,7 +284,7 @@ API_AVAILABLE(ios(10.0)) {
 }
 
 - (void)handleLocalNotificationReceived:(NSNotification *)notification {
-    NSLog(@"RnAlarmNotification ~ handleLocalNotificationReceived - %@", hasListeners ? @"true" : @"false")
+    NSLog(@"RnAlarmNotification ~ handleLocalNotificationReceived - %@", hasListeners ? @"true" : @"false");
     // send to js
     if (hasListeners) { 
         [self sendEventWithName:@"OnNotificationOpened" body: stringify(notification.userInfo)];
@@ -304,7 +292,7 @@ API_AVAILABLE(ios(10.0)) {
 }
 
 - (void)handleLocalNotificationDismissed:(NSNotification *)notification {
-    NSLog(@"RnAlarmNotification ~ handleLocalNotificationDismissed - %@", hasListeners ? @"true" : @"false")
+    NSLog(@"RnAlarmNotification ~ handleLocalNotificationDismissed - %@", hasListeners ? @"true" : @"false");
     // send to js
     if (hasListeners) { 
         [self sendEventWithName:@"OnNotificationDismissed" body: stringify(notification.userInfo)];
@@ -312,15 +300,11 @@ API_AVAILABLE(ios(10.0)) {
 }
 
 - (void)handleLocalNotificationStarted:(NSNotification *)notification {
-    NSLog(@"RnAlarmNotification ~ handleLocalNotificationStarted - %@", hasListeners ? @"true" : @"false")
+    NSLog(@"RnAlarmNotification ~ handleLocalNotificationStarted - %@", hasListeners ? @"true" : @"false");
     // send to js
     if (hasListeners) { 
-        [self endEventWithName:@"OnNotificationStarted" body: stringify(notification.userInfo)];
+        [self sendEventWithName:@"OnNotificationStarted" body: stringify(notification.userInfo)];
     }
-}
-
-- (void)stopObserving {
-    [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
 - (void)stopSound {

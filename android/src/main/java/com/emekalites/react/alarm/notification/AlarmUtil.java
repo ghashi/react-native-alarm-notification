@@ -436,7 +436,7 @@ public class AlarmUtil {
             long[] vibrationPattern = vibration == 0 ? DEFAULT_VIBRATE_PATTERN : new long[]{0, vibration, 1000, vibration};
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                NotificationChannel mChannel = new NotificationChannel(channelID, "Alarm Notify", NotificationManager.IMPORTANCE_HIGH);
+                NotificationChannel mChannel = new NotificationChannel(channelID, "Alarme", NotificationManager.IMPORTANCE_HIGH);
                 AudioAttributes audioAttributes = new AudioAttributes.Builder()
                         .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                         .setUsage(AudioAttributes.USAGE_NOTIFICATION)
@@ -461,6 +461,10 @@ public class AlarmUtil {
                     if (vibrator.hasVibrator()) {
                         vibrator.vibrate(VibrationEffect.createWaveform(vibrationPattern, 0));
                     }
+                } else {
+                    // https://stackoverflow.com/a/52207215/3670829
+                    mChannel.setVibrationPattern(new long[]{ 0 }); 
+                    mChannel.enableVibration(true);
                 }
 
                 mNotificationManager.createNotificationChannel(mChannel);

@@ -64,7 +64,7 @@ public class AlarmUtil {
         audioInterface.init(mContext);
     }
 
-    boolean isAlarmPlaying() {
+    public boolean isAlarmPlaying() {
         return alarmPlaying;
     }
 
@@ -558,7 +558,7 @@ public class AlarmUtil {
         }
     }
 
-    ArrayList<AlarmModel> getAlarms() {
+    public ArrayList<AlarmModel> getAlarms() {
         return getAlarmDB().getAlarmList(1);
     }
 

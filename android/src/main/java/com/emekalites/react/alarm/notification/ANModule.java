@@ -1,6 +1,9 @@
 package com.emekalites.react.alarm.notification;
 
+import static com.emekalites.react.alarm.notification.Constants.ADD_INTENT;
+
 import android.app.Application;
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 
@@ -182,6 +185,14 @@ public class ANModule extends ReactContextBaseJavaModule {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    @ReactMethod
+    public void playAlarmWithId(int id) {
+        Intent intent = new Intent(mReactContext, AlarmReceiver.class);
+        intent.putExtra("intentType", ADD_INTENT);
+        intent.putExtra("PendingId", id);
+        mReactContext.sendBroadcast(intent);
     }
 
     @ReactMethod

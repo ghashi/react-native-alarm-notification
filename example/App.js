@@ -47,9 +47,10 @@ class App extends Component {
 	_subscribeStart;
 
 	state = {
-		fireDate: ReactNativeAN.parseDate(new Date(Date.now())),
+		fireDate: ReactNativeAN.parseDate(new Date(Date.now() + 60 * 1000)),
 		update: [],
 		futureFireDate: '0.1',
+		idToBePlayed: null,
 		alarmId: null,
 		alarmPlaying: undefined,
 	};
@@ -131,6 +132,10 @@ class App extends Component {
 
 	stopAlarmSound = () => {
 		ReactNativeAN.stopAlarmSound();
+	};
+
+	playAlarmWithId = () => {
+		ReactNativeAN.playAlarmWithId(this.state.idToBePlayed);
 	};
 
 	sendNotification = () => {
@@ -230,7 +235,7 @@ class App extends Component {
 	};
 
 	render() {
-		const {update, fireDate, futureFireDate, alarmId} = this.state;
+		const {update, fireDate, futureFireDate, idToBePlayed, alarmId} = this.state;
 		return (
 			<ScrollView>
 				<View style={styles.wrapper}>
@@ -277,6 +282,23 @@ class App extends Component {
 							color="#007fff"
 						/>
 					</View>
+
+					<View style={styles.margin}>
+						<Text>Alarm id to be played</Text>
+						<TextInput
+							style={styles.date}
+							onChangeText={(text) => this.setState({idToBePlayed: text})}
+							value={idToBePlayed}
+						/>
+					</View>
+					<View style={styles.margin}>
+						<Button
+							onPress={this.playAlarmWithId}
+							title="Play alarm with id"
+							color="#007fff"
+						/>
+					</View>
+
 					<View style={styles.margin}>
 						<Button
 							onPress={this.sendNotification}

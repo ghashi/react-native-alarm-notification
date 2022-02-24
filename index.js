@@ -101,6 +101,14 @@ ReactNativeAN.isAlarmPlaying = async () => {
   return result;
 };
 
+ReactNativeAN.playAlarmWithId = (id) => {
+  if (!id) {
+    throw new Error("id is required to play alarm");
+  }
+
+  RNAlarmNotification.playAlarmWithId(parseInt(id, 0));
+};
+
 ReactNativeAN.deleteRepeatingAlarm = (id) => {
   if (!id) {
     throw new Error("id is required to delete alarm");

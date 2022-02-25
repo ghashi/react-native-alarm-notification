@@ -47,6 +47,7 @@ public class ANModule extends ReactContextBaseJavaModule {
 
     @Override
     public String getName() {
+        
         return "RNAlarmNotification";
     }
 

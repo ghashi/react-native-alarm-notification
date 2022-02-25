@@ -21,6 +21,7 @@ const alarmNotifData = {
 	message: 'Stand up',
 	vibrate: true,
 	play_sound: true,
+	sound_name: 'iphone_ringtone.mp3',
 	schedule_type: 'once',
 	channel: 'wakeup',
 	data: {content: 'my notification id is 22'},

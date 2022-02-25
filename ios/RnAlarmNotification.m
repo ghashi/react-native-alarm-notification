@@ -705,4 +705,38 @@ RCT_EXPORT_METHOD(checkPermissions:(RCTResponseSenderBlock)callback) {
 }
 
 
+RCT_EXPORT_METHOD(playAlarmWithId: (NSInteger *)alarmId){
+    NSLog(@"play alarm: %li", (long) alarmId);
+    
+    if (@available(iOS 10.0, *)) {
+        UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
+        [center getPendingNotificationRequestsWithCompletionHandler:^(NSArray<UNNotificationRequest *> * _Nonnull requests) {
+            NSPredicate *predicate = [NSPredicate
+                                      predicateWithFormat:@"identifier == %@",
+                                      [NSString stringWithFormat:@"%i", alarmId]
+            ];
+          
+            NSArray *filteredArray = [requests filteredArrayUsingPredicate:predicate];
+            UNNotificationRequest* firstFoundObject = nil;
+            firstFoundObject =  filteredArray.count > 0 ? filteredArray.firstObject : nil;
+
+            if (!firstFoundObject) {
+                return;
+            }
+            
+            // send notification now
+            NSMutableDictionary *notification = [NSMutableDictionary dictionaryWithDictionary:firstFoundObject.content.userInfo];
+            [notification setValue:firstFoundObject.content.title forKey:@"title"];
+            [notification setValue:firstFoundObject.content.body forKey:@"message"];
+            [notification setValue:@([firstFoundObject.content.userInfo[@"volume"] floatValue])  forKey:@"volume"];
+            [notification setValue:nil forKey:@"fire_date"];
+            [self sendNotification:notification];
+            
+            [self deleteAlarm: alarmId];
+        }];
+    } else {
+        // Fallback on earlier versions
+    }
+}
+
 @end

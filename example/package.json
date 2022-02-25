@@ -8,12 +8,13 @@
     "start": "react-native start",
     "test": "jest",
     "lint": "eslint .",
+    "sync": "yarn upgrade react-native-alarm-notification",
     "postinstall": "node ../scripts/examples_postinstall.js"
   },
   "dependencies": {
     "react": "17.0.1",
     "react-native": "0.64.1",
-    "react-native-alarm-notification": "file:../"
+    "react-native-alarm-notification": "file:.."
   },
   "devDependencies": {
     "@babel/core": "^7.12.9",

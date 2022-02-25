@@ -2,8 +2,6 @@
 //  AlarmConfig.m
 //  
 //
-//  Created by Guilherme Hashioka on 12/08/21.
-//
 
 #import "AlarmConfig.h"
 

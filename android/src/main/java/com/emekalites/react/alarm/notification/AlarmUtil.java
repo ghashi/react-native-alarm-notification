@@ -157,7 +157,15 @@ public class AlarmUtil {
         intent.putExtra("intentType", ADD_INTENT);
         intent.putExtra("PendingId", alarm.getId());
 
-        PendingIntent alarmIntent = PendingIntent.getBroadcast(mContext, alarmId, intent, 0);
+        PendingIntent alarmIntent = PendingIntent.getBroadcast(
+                mContext,
+                alarmId,
+                intent,
+                android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S ?
+                    PendingIntent.FLAG_IMMUTABLE :
+                    0
+            );
+
         AlarmManager alarmManager = this.getAlarmManager();
 
         String scheduleType = alarm.getScheduleType();
@@ -206,7 +214,9 @@ public class AlarmUtil {
         intent.putExtra("intentType", ADD_INTENT);
         intent.putExtra("PendingId", alarm.getId());
 
-        PendingIntent alarmIntent = PendingIntent.getBroadcast(mContext, alarmId, intent, 0);
+        PendingIntent alarmIntent = PendingIntent.getBroadcast(mContext, alarmId, intent,  android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S ?
+                PendingIntent.FLAG_IMMUTABLE :
+                0);
         AlarmManager alarmManager = this.getAlarmManager();
 
         String scheduleType = alarm.getScheduleType();
@@ -348,7 +358,9 @@ public class AlarmUtil {
     private PendingIntent createOnDismissedIntent(Context context, int notificationId) {
         Intent intent = new Intent(context, AlarmDismissReceiver.class);
         intent.putExtra(Constants.DISMISSED_NOTIFICATION_ID, notificationId);
-        return PendingIntent.getBroadcast(context.getApplicationContext(), notificationId, intent, 0);
+        return PendingIntent.getBroadcast(context.getApplicationContext(), notificationId, intent,  android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S ?
+                PendingIntent.FLAG_IMMUTABLE :
+                0);
     }
 
     public void sendNotification(AlarmModel alarm) {

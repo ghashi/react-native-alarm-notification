@@ -372,7 +372,7 @@ public class AlarmUtil {
       mContext,
       alarmId,
       intent,
-      PendingIntent.FLAG_UPDATE_CURRENT
+      PendingIntent.FLAG_IMMUTABLE
     );
     alarmManager.cancel(alarmIntent);
 
@@ -530,7 +530,7 @@ public class AlarmUtil {
         mContext,
         notificationID,
         intent,
-        PendingIntent.FLAG_UPDATE_CURRENT
+        PendingIntent.FLAG_IMMUTABLE
       );
 
       // https://stackoverflow.com/a/63336115/3670829
@@ -623,7 +623,7 @@ public class AlarmUtil {
           mContext,
           notificationID,
           dismissIntent,
-          PendingIntent.FLAG_UPDATE_CURRENT
+          PendingIntent.FLAG_IMMUTABLE
         );
         NotificationCompat.Action dismissAction = new NotificationCompat.Action(
           android.R.drawable.ic_lock_idle_alarm,
@@ -639,7 +639,7 @@ public class AlarmUtil {
           mContext,
           notificationID,
           snoozeIntent,
-          PendingIntent.FLAG_UPDATE_CURRENT
+          PendingIntent.FLAG_IMMUTABLE
         );
         NotificationCompat.Action snoozeAction = new NotificationCompat.Action(
           R.drawable.ic_snooze,

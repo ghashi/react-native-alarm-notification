@@ -401,7 +401,7 @@ API_AVAILABLE(ios(10.0)) {
     NSNumber *loopSound = alarmConfig.loopSound;
     NSString *volume = alarmConfig.volume;
     AVAudioSession *session = [AVAudioSession sharedInstance];
-    [session setCategory:AVAudioSessionCategoryPlayback
+    [session setCategory:AVAudioSessionCategoryPlayAndRecord
              withOptions:AVAudioSessionCategoryOptionDefaultToSpeaker
                    error:nil];
     [session setActive:true error:nil];
